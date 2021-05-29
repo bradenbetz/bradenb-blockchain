@@ -34,7 +34,7 @@ class Blockchain(object):
             'previous_hash': previous_hash or self.hash(self.chain(-1))
         }
 
-        # Reset the current list of transactions on creation of a new block
+        # Reset the current list of transactions on creation of a new block and add the block to the blockchain
         self.current_transactions = []
         self.chain.append(block)
         return block
