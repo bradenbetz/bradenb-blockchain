@@ -1,6 +1,9 @@
 import hashlib
 import json
+from textwrap import dedent
 from time import time
+from uuid import uuid4
+from flask import Flask, jsonify
 
 """
    This project was done to learn how a Blockchain functions on a technical level, to better understand how they work
@@ -71,3 +74,64 @@ class Blockchain(object):
     def last_block(self):
         return self.chain(-1)
 
+    def proof_of_work(self, last_proof):
+        """
+        The Proof Of Work Algorithim is as follows - Find a number p such that hash(pp') contains the leading 4 zeros, where p is the previous p'
+        p is the previous proof and p' is the new proof
+        :param last_proof: <int>
+        :return: <int>
+        """
+
+        proof = 0
+        while self.valid_proof(last_proof, proof) is False:
+            proof += 1
+
+        return proof
+
+    @staticmethod
+    def valid_proof(last_proof, proof):
+        """
+        Validates the proof, does the hash(last_proof, proof) contain the 4 leading zeros?
+        :param last_proof: <int> Previous Proof
+        :param proof: <int> Current Proof
+        :return: <bool> True if correct, False if wrong
+        """
+        guess = f'{last_proof}{proof}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+        return guess_hash[:4] == "0000"
+
+
+# Create our node that will validate transactions and add blocks to the blockchain
+app = Flask(__name__)
+
+# Create a unique address for this node
+
+node_identifier = str(uuid4()).replace('-', '')
+
+# instiantiate the Blockchain
+
+blockchain = Blockchain()
+
+
+@app.route('/mine', methods=['GET'])
+def mine():
+    return "We'll mine a new block"
+
+
+@app.route('/transactions/new', methods=['POST'])
+def new_transaction():
+    return "We'll add a new Transaction"
+
+
+@app.route('/chain', methods=['GET'])
+def full_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
+    }
+
+    return jsonify(response), 200
+
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=3000)
