@@ -1,9 +1,6 @@
 import hashlib
 import json
-from textwrap import dedent
 from time import time
-from uuid import uuid4
-from flask import Flask, jsonify
 
 """
    This project was done to learn how a Blockchain functions on a technical level, to better understand how they work
@@ -72,7 +69,7 @@ class Blockchain(object):
 
     @property
     def last_block(self):
-        return self.chain(-1)
+        return self.chain[-1]
 
     def proof_of_work(self, last_proof):
         """
@@ -100,7 +97,7 @@ class Blockchain(object):
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
-
+"""
 # Create our node that will validate transactions and add blocks to the blockchain
 app = Flask(__name__)
 
@@ -135,3 +132,4 @@ def full_chain():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3000)
+"""
