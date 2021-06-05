@@ -82,6 +82,7 @@ def register_nodes():
     nodes = values.get('nodes')
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
+
     for node in nodes:
         blockchain.register_node(node)
 

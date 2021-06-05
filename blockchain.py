@@ -23,35 +23,41 @@ class Blockchain(object):
 
     def register_node(self, address):
         """
-        Add a new node(miner/computer) to the list of nodes
-        :param address: Address of the node
-        :return: None
+        Add a new node to the list of nodes
+        :param address: Address of node. Eg. 'http://192.168.0.5:5000'
         """
 
         parsed_url = urlparse(address)
-        self.nodes.add(parsed_url.netloc)
+        if parsed_url.netloc:
+            self.nodes.add(parsed_url.netloc)
+        elif parsed_url.path:
+            # Accepts an URL without scheme like '192.168.0.5:5000'.
+            self.nodes.add(parsed_url.path)
+        else:
+            raise ValueError('Invalid URL')
 
     def valid_chain(self, chain):
         """
-        Determine if the given blockchain is valid (Consensus Algorithm)
-        :param chain: The blockchain to verify
-        :return: <bool> True if valid, false if not
+        Determine if a given blockchain is valid
+        :param chain: A blockchain
+        :return: True if valid, False if not
         """
 
         last_block = chain[0]
         current_index = 1
-        # Can probably optimize this later
+
         while current_index < len(chain):
             block = chain[current_index]
             print(f'{last_block}')
             print(f'{block}')
             print("\n-----------\n")
             # Check that the hash of the block is correct
-            if block['previous_hash'] != self.hash(last_block):
+            last_block_hash = self.hash(last_block)
+            if block['previous_hash'] != last_block_hash:
                 return False
 
-            # Check that the Proof-Of-Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof']):
+            # Check that the Proof of Work is correct
+            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
                 return False
 
             last_block = block
