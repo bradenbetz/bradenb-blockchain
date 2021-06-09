@@ -1,5 +1,6 @@
 from uuid import uuid4
-from flask import Flask, jsonify, request
+from flask import jsonify, Flask, request
+
 from blockchain import Blockchain
 
 """
@@ -19,6 +20,7 @@ NODE 2 = http://localhost:5002
 
 # Instantiate the Node
 app = Flask(__name__)
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
@@ -47,7 +49,7 @@ def mine():
 
     response = {
         'message': "New Block Forged",
-        'index': block['index'],
+        'index': block['Block'],
         'transactions': block['transactions'],
         'proof': block['proof'],
         'previous_hash': block['previous_hash'],
@@ -57,7 +59,7 @@ def mine():
 
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
-    values = request.get_json()
+    values = request.get_json(force=True)
 
     # Check that the required fields are in the data
     required = ['sender', 'recipient', 'amount']
@@ -67,7 +69,7 @@ def new_transaction():
     # Create a new Transaction
     index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
 
-    response = {'message': f'Transaction will be added to Block {index}'}
+    response = {'message': 'Transaction will be added to Block {}'.format(index)}
     return jsonify(response), 201
 
 
@@ -82,7 +84,7 @@ def full_chain():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    values = request.get_json(force=True) # Added force=True to fix the Nonetype is not iterable
+    values = request.get_json(force=True)  # Added force=True to fix the Nonetype is not iterable
 
     nodes = values.get('nodes')
     if nodes is None:
@@ -125,4 +127,3 @@ if __name__ == '__main__':
     port = args.port
 
     app.run(host='0.0.0.0', port=port)
-

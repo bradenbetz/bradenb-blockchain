@@ -3,6 +3,7 @@ import json
 from time import time
 from urllib.parse import urlparse
 import requests
+from datetime import datetime
 
 """
    This project was done to learn how a Blockchain functions on a technical level, to better understand how they work
@@ -26,10 +27,11 @@ class Blockchain:
         :param previous_hash: Hash of previous Block
         :return: New Block
         """
+        now = datetime.now()
 
         block = {
-            'index': len(self.chain) + 1,
-            'timestamp': time(),
+            'Block': len(self.chain) + 1,
+            'timestamp': now.strftime("%H:%M"),
             'transactions': self.current_transactions,
             'proof': proof,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
@@ -55,7 +57,7 @@ class Blockchain:
             'amount': amount,
         })
 
-        return self.last_block['index'] + 1
+        return self.last_block['Block'] + 1
 
     @property
     def last_block(self):
