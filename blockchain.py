@@ -10,16 +10,99 @@ import requests
 """
 
 
-class Blockchain(object):
-
-    # Initialize the Genesis Block and Current transaction
+class Blockchain:
     def __init__(self):
-        self.chain = []
         self.current_transactions = []
+        self.chain = []
         self.nodes = set()
 
-        # Create the Genesis(starting) block here
-        self.new_block(previous_hash=1, proof=100)
+        # Create the genesis block
+        self.new_block(previous_hash='1', proof=100)
+
+    def new_block(self, proof, previous_hash):
+        """
+        Create a new Block in the Blockchain
+        :param proof: The proof given by the Proof of Work algorithm
+        :param previous_hash: Hash of previous Block
+        :return: New Block
+        """
+
+        block = {
+            'index': len(self.chain) + 1,
+            'timestamp': time(),
+            'transactions': self.current_transactions,
+            'proof': proof,
+            'previous_hash': previous_hash or self.hash(self.chain[-1]),
+        }
+
+        # Reset the current list of transactions
+        self.current_transactions = []
+
+        self.chain.append(block)
+        return block
+
+    def new_transaction(self, sender, recipient, amount):
+        """
+        Creates a new transaction to go into the next mined Block
+        :param sender: Address of the Sender
+        :param recipient: Address of the Recipient
+        :param amount: Amount
+        :return: The index of the Block that will hold this transaction
+        """
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount,
+        })
+
+        return self.last_block['index'] + 1
+
+    @property
+    def last_block(self):
+        return self.chain[-1]
+
+    @staticmethod
+    def hash(block):
+        """
+        Creates a SHA-256 hash of a Block
+        :param block: Block
+        """
+
+        # We must make sure that the Dictionary is Ordered, or we'll have inconsistent hashes
+        block_string = json.dumps(block, sort_keys=True).encode()
+        return hashlib.sha256(block_string).hexdigest()
+
+    def proof_of_work(self, last_block):
+        """
+        Proof of Work Algorithm: Find a number p' such that hash(pp') contains leading 4 zeroes
+        where p is the previous proof, and p' is the new proof
+
+        :param last_block: <dict> last Block
+        :return: <int>
+        """
+
+        last_proof = last_block['proof']
+        last_hash = self.hash(last_block)
+
+        proof = 0
+        while self.valid_proof(last_proof, proof, last_hash) is False:
+            proof += 1
+
+        return proof
+
+    @staticmethod
+    def valid_proof(last_proof, proof, last_hash):
+        """
+        Validates the Proof
+        :param last_proof: <int> Previous Proof
+        :param proof: <int> Current Proof
+        :param last_hash: <str> The hash of the Previous Block
+        :return: <bool> True if correct, False if not.
+        """
+
+        guess = f'{last_proof}{proof}{last_hash}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+        return guess_hash[:4] == "0000"
 
     def register_node(self, address):
         """
@@ -38,7 +121,7 @@ class Blockchain(object):
 
     def valid_chain(self, chain):
         """
-        Determine if a given blockchain is valid
+        Check if a given blockchain is valid
         :param chain: A blockchain
         :return: True if valid, False if not
         """
@@ -46,6 +129,7 @@ class Blockchain(object):
         last_block = chain[0]
         current_index = 1
 
+        # Can possibly optimize this somehow
         while current_index < len(chain):
             block = chain[current_index]
             print(f'{last_block}')
@@ -67,113 +151,36 @@ class Blockchain(object):
 
     def resolve_conflicts(self):
         """
-        This is the consensus algorithm. It resolves conflicts with a given chain by replacing it by the longest one in
-        the network.
-        :return: <bool> True if the chain was replaced, False if not
+        This is our consensus algorithm, it resolves conflicts
+        by replacing our chain with the longest one in the network.
+        :return: True if our chain was replaced, False if not
         """
 
-        neighbors = self.nodes
+        neighbours = self.nodes
         new_chain = None
 
-        # We are only looking for chains longer than the one our node currently holds
-
+        # We're only looking for chains longer than ours
         max_length = len(self.chain)
 
         # Grab and verify the chains from all the nodes in our network
-
-        for node in neighbors:
+        for node in neighbours:
             response = requests.get(f'https://{node}/chain')
 
             if response.status_code == 200:
                 length = response.json()['length']
                 chain = response.json()['chain']
 
-                # Check if the length is longer and if the chain is valid
+                # Check if the length is longer and the chain is valid
                 if length > max_length and self.valid_chain(chain):
                     max_length = length
                     new_chain = chain
 
-        # Replace our chain if we discovered a new valid chain longer than the one our node holds
+        # Replace our chain if we discovered a new, valid chain longer than ours
         if new_chain:
             self.chain = new_chain
             return True
+
         return False
 
-    def new_block(self, proof, previous_hash=None):
-        """
-        Creates a new transaction to go into the next mined block
-        :param previous_hash:
-        :param proof: <int> The proof given by the proof of work algorithm
-        :return: <dict> New block with transactions
 
-        """
-        block = {
-            'index': len(self.chain),
-            'timestamp': time(),
-            'transactions': self.current_transactions,
-            'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain(-1))
-        }
 
-        # Reset the current list of transactions on creation of a new block and add the block to the blockchain
-        self.current_transactions = []
-        self.chain.append(block)
-        return block
-
-    def new_transaction(self, sender, recipient, amount):
-        """
-        Creates a new transaction to go into the next mined block
-        :param sender: <str> Address of the sender of the crypto
-        :param recipient: <str> Address of the recipient of the crypto
-        :param amount: <int> Amount of crypto being sent by the sender
-        :return: <int> index of the block that will hold this transaction
-
-        """
-        self.current_transactions.append({
-            'sender': sender,
-            'recipient': recipient,
-            'amount': amount,
-        })
-
-        return self.last_block['index'] + 1
-
-    @staticmethod
-    def hash(block):
-        """
-        :param block: <dict> Block
-        :return: <str> the hashed address
-
-        """
-        # The Dictionary must be ordered properly or the produced hashes will be inconsistent
-        block_string = json.dumps(block, sort_keys=True).encode()
-        return hashlib.sha256(block_string).hexdigest()
-
-    @property
-    def last_block(self):
-        return self.chain[-1]
-
-    def proof_of_work(self, last_proof):
-        """
-        The Proof Of Work Algorithim is as follows - Find a number p such that hash(pp') contains the leading 4 zeros, where p is the previous p'
-        p is the previous proof and p' is the new proof
-        :param last_proof: <int>
-        :return: <int>
-        """
-
-        proof = 0
-        while self.valid_proof(last_proof, proof) is False:
-            proof += 1
-
-        return proof
-
-    @staticmethod
-    def valid_proof(last_proof, proof):
-        """
-        Validates the proof, does the hash(last_proof, proof) contain the 4 leading zeros?
-        :param last_proof: <int> Previous Proof
-        :param proof: <int> Current Proof
-        :return: <bool> True if correct, False if wrong
-        """
-        guess = f'{last_proof}{proof}'.encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
