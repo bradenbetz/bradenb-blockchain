@@ -140,8 +140,9 @@ class Blockchain:
             if block['previous_hash'] != last_block_hash:
                 return False
 
-            # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
+            # Check that the Proof of Work is correct, changed last_block to block['previous_hash']
+            # to prevent issues when syncing the chains between nodes
+            if not self.valid_proof(last_block['proof'], block['proof'], block['previous_hash']):
                 return False
 
             last_block = block
@@ -171,7 +172,8 @@ class Blockchain:
                 chain = response.json()['chain']
 
                 # Check if the length is longer and the chain is valid
-                if length > max_length and self.valid_chain(chain):
+                # Added check at the end as there was a unchecked field length
+                if length > max_length and self.valid_chain(chain) and length == len(chain):
                     max_length = length
                     new_chain = chain
 
