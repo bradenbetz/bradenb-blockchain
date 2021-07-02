@@ -5,12 +5,12 @@ from urllib.parse import urlparse
 import requests
 
 """
-   This project was done to learn how a Blockchain functions on a technical level, to better understand how they work
+   This project was done to learn how a blockchain2 functions on a technical level, to better understand how they work
 
 """
 
 
-class Blockchain:
+class lockchain2:
     def __init__(self):
         self.current_transactions = []
         self.chain = []
@@ -21,7 +21,7 @@ class Blockchain:
 
     def new_block(self, proof, previous_hash):
         """
-        Create a new Block in the Blockchain
+        Create a new Block in the blockchain2
         :param proof: The proof given by the Proof of Work algorithm
         :param previous_hash: Hash of previous Block
         :return: New Block
@@ -121,8 +121,8 @@ class Blockchain:
 
     def valid_chain(self, chain):
         """
-        Check if a given blockchain is valid
-        :param chain: A blockchain
+        Check if a given blockchain2 is valid
+        :param chain: A blockchain2
         :return: True if valid, False if not
         """
 
