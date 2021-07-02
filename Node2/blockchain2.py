@@ -10,7 +10,7 @@ import requests
 """
 
 
-class lockchain2:
+class blockchain2:
     def __init__(self):
         self.current_transactions = []
         self.chain = []
